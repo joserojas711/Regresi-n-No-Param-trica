@@ -82,6 +82,70 @@ install.packages("VGAM")
 library(VGAM)
 
 modelo_gam <- gam(ADVEcat ~ s(edad, bs = "re") + sexo + carrera, data = data, family = multinom(K = 3))
+################ GRAFICOS I ################
+conf_matrix_table <- as.table(conf_matrix$table)
+conf_matrix_df <- as.data.frame(conf_matrix_table)
+colnames(conf_matrix_df) <- c("Reference", "Prediction", "Freq")
+
+ggplot(conf_matrix_df, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), color = "white") +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Matriz de Confusión",
+       x = "Referencia",
+       y = "Predicción") +
+  theme_minimal()
+
+
+################ GRAFICO II ################
+conf_matrix_df$Error <- ifelse(conf_matrix_df$Reference == conf_matrix_df$Prediction, 0, conf_matrix_df$Freq)
+ggplot(conf_matrix_df, aes(x = Reference, y = Error, fill = Reference)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Clasificación Correcta por Clase",
+       x = "Clase de Referencia",
+       y = "Cantidad de Errores") +
+  theme_minimal()
+
+
+################ GRAFICO III ################
+library(pROC)
+#data$ADVEcat <- factor(data$ADVEcat, levels = c("bajo", "medio", "medio alto", "alto"))
+#predicciones <- factor(predicciones, levels = c("bajo", "medio", "medio alto", "alto"))
+#roc_multiclass <- multiclass.roc(data$ADVEcat, predicciones)
+#plot(roc_multiclass)
+
+conf_matrix_table <- as.table(conf_matrix$table)
+conf_matrix_df <- as.data.frame(conf_matrix_table)
+colnames(conf_matrix_df) <- c("Reference", "Prediction", "Freq")
+
+ggplot(conf_matrix_df, aes(x = Reference, y = Prediction, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = Freq), color = "white") +
+  scale_fill_gradient(low = "white", high = "red") +
+  labs(title = "Matriz de Confusión",
+       x = "Referencia",
+       y = "Predicción") +
+  theme_minimal()
+
+conf_matrix_df$Error <- ifelse(conf_matrix_df$Reference == conf_matrix_df$Prediction, 0, conf_matrix_df$Freq)
+
+ggplot(conf_matrix_df, aes(x = Reference, y = Error, fill = Reference)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Errores de Clasificación por Clase",
+       x = "Clase de Referencia",
+       y = "Cantidad de Errores") +
+  theme_minimal()
+
+pred_prob <- predict(modelo, newdata = data, type = "probs")
+
+data$ADVEcat_numeric <- as.numeric(data$ADVEcat)
+roc_multiclass <- multiclass.roc(data$ADVEcat_numeric, pred_prob)
+ggroc(roc_multiclass$rocs[[3]], col = "red")
+length(roc_multiclass$rocs)
+for (i in 1 :length(roc_multiclass$rocs)) {
+    ggsave(paste0("grafico_", i, ".png"), ggroc(roc_multiclass$rocs[[i]], col = i))
+}
+
 
 
 ###################### RANDOM FOREST ######################
